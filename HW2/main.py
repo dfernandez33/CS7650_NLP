@@ -84,6 +84,20 @@ def main():
 
     start_time = time.time()
     model.fit(X_train,Y_train)
+    # if args.model == "NaiveBayes":
+    #     top_10, bot_10 = model.get_ratios()
+    #     print("Top 10 hatespeech words")
+    #     for entry in top_10:
+    #         print(str(list(feat_extractor.bigrams.keys())[list(feat_extractor.bigrams.values()).index(entry[1])])
+    #               + ":" + str(entry[0]))
+    #
+    #     print("")
+    #
+    #     print("Top 10 Nonhatespeech words")
+    #     for entry in bot_10:
+    #         print(str(list(feat_extractor.bigrams.keys())[list(feat_extractor.bigrams.values()).index(entry[1])])
+    #               + ":" + str(entry[0]))
+
     print("===== Train Accuracy =====")
     accuracy(model.predict(X_train), Y_train)
     
