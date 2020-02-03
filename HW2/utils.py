@@ -1,6 +1,7 @@
 from nltk.tokenize import regexp_tokenize
 import numpy as np
 import heapq
+import re
 
 # Here is a default pattern for tokenization, you can substitue it with yours
 default_pattern =  r"""(?x)                  
@@ -24,6 +25,8 @@ def tokenize(text, pattern = default_pattern):
         list -- list of tokenized words, such as ['I', 'love', 'nlp']
     """
     text = text.lower()
+    text = re.sub(r'(https|http)?:\/\/.*[\r\n]*', '', text)
+    text = re.sub(r'([^\s\w]|_)+', '', text)
     return regexp_tokenize(text, pattern)
 
 
@@ -102,15 +105,20 @@ class BigramFeature(FeatureExtractor):
         self.bigrams = {}
 
     def fit(self, text_set):
-        # Add your code here!
+        bigram_frequenies = {}
+        for document in text_set:
+            document_bigrams = self.generate_bigrams(document)
+            for bigram in document_bigrams:
+                if bigram not in bigram_frequenies.keys():
+                    bigram_frequenies[bigram] = 1
+                else:
+                    bigram_frequenies[bigram] += 1
+
+        most_frequent_bigrams = heapq.nlargest(10000, bigram_frequenies, key=bigram_frequenies.get)
         index = 0
-        for i in range(0, len(text_set)):
-            sample = text_set[i]
-            bigrams = zip(*[sample[i:] for i in range(2)])
-            for bigram in bigrams:
-                if bigram not in self.bigrams:
-                    self.bigrams[bigram] = index
-                    index += 1
+        for bigram in most_frequent_bigrams:
+            self.bigrams[bigram] = index
+            index += 1
 
     def transform(self, text):
         # Add your code here!
@@ -130,21 +138,22 @@ class BigramFeature(FeatureExtractor):
 
         return np.array(features)
 
+    def generate_bigrams(self, text):
+        return zip(*[text[i:] for i in range(2)])
+
 class CustomFeature(FeatureExtractor):
     """customized feature extractor, such as TF-IDF
     """
     def __init__(self):
         # Add your code here!
-        self.bow = BigramFeature()
+        self.bigrams = {}
         self.word_idf_values = {}
         self.most_frequent_bigrams = None
 
     def fit(self, text_set):
         # Add your code here!
 
-        # create bigram representation of words
-        self.bow.fit(text_set)
-
+        # create bigram index dictionary from the top 10,000 most frequent bigrams
         bigram_frequenies = {}
         for document in text_set:
             document_bigrams = self.generate_bigrams(document)
@@ -154,7 +163,11 @@ class CustomFeature(FeatureExtractor):
                 else:
                     bigram_frequenies[bigram] += 1
 
-        self.most_frequent_bigrams = heapq.nlargest(10000, bigram_frequenies, key=bigram_frequenies.get)
+        self.most_frequent_bigrams = heapq.nlargest(4000, bigram_frequenies, key=bigram_frequenies.get)
+        index = 0
+        for bigram in self.most_frequent_bigrams:
+            self.bigrams[bigram] = index
+            index += 1
 
         # calculate inverse document frequency values for each word
         for bigram in self.most_frequent_bigrams:
@@ -169,7 +182,7 @@ class CustomFeature(FeatureExtractor):
 
     def transform(self, text):
         # Add your code here!
-        document_bigrams = self.generate_bigrams(text)
+        document_bigrams = list(self.generate_bigrams(text))
 
         term_counts = {}
         for bigram in document_bigrams:
@@ -180,13 +193,12 @@ class CustomFeature(FeatureExtractor):
 
         term_frequencies = {}
         for bigram in document_bigrams:
-            term_frequencies[bigram] = term_counts[bigram] / len(text)
+            term_frequencies[bigram] = term_counts[bigram] / len(document_bigrams)
 
         features = np.zeros(len(self.most_frequent_bigrams))
         for bigram in document_bigrams:
             if bigram in self.most_frequent_bigrams:
-                # this is gonna cause indexing issues, figure out way to rebuild bigram index dictionary based on most frequent
-                features[self.bow.bigrams[bigram]] = term_frequencies[bigram] * self.word_idf_values[bigram]
+                features[self.bigrams[bigram]] = term_frequencies[bigram] * self.word_idf_values[bigram]
 
         return features
 

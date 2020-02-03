@@ -133,7 +133,7 @@ class LogisticRegressionClassifier(HateSpeechClassifier):
         self.learning_rate = 5e-5
         self.epochs = 60000
         self.weights = None
-        self.regularization_factor = 0
+        self.regularization_factor = .001
 
     def fit(self, X, Y):
         # Add your code here!
