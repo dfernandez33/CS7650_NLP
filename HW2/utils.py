@@ -25,8 +25,9 @@ def tokenize(text, pattern = default_pattern):
         list -- list of tokenized words, such as ['I', 'love', 'nlp']
     """
     text = text.lower()
-    text = re.sub(r'(https|http)?:\/\/.*[\r\n]*', '', text)
-    text = re.sub(r'([^\s\w]|_)+', '', text)
+    # Uncomment the lines below to remove special characters, punctuation, and URLS from the text.
+    # text = re.sub(r'(https|http)?:\/\/.*[\r\n]*', '', text)
+    # text = re.sub(r'([^\s\w]|_)+', '', text)
     return regexp_tokenize(text, pattern)
 
 
@@ -114,7 +115,7 @@ class BigramFeature(FeatureExtractor):
                 else:
                     bigram_frequenies[bigram] += 1
 
-        most_frequent_bigrams = heapq.nlargest(10000, bigram_frequenies, key=bigram_frequenies.get)
+        most_frequent_bigrams = heapq.nlargest(5000, bigram_frequenies, key=bigram_frequenies.get)
         index = 0
         for bigram in most_frequent_bigrams:
             self.bigrams[bigram] = index
@@ -153,7 +154,7 @@ class CustomFeature(FeatureExtractor):
     def fit(self, text_set):
         # Add your code here!
 
-        # create bigram index dictionary from the top 10,000 most frequent bigrams
+        # create bigram index dictionary from the top 5,000 most frequent bigrams
         bigram_frequenies = {}
         for document in text_set:
             document_bigrams = self.generate_bigrams(document)
@@ -163,7 +164,7 @@ class CustomFeature(FeatureExtractor):
                 else:
                     bigram_frequenies[bigram] += 1
 
-        self.most_frequent_bigrams = heapq.nlargest(4000, bigram_frequenies, key=bigram_frequenies.get)
+        self.most_frequent_bigrams = heapq.nlargest(5000, bigram_frequenies, key=bigram_frequenies.get)
         index = 0
         for bigram in self.most_frequent_bigrams:
             self.bigrams[bigram] = index

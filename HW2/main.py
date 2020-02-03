@@ -84,18 +84,19 @@ def main():
 
     start_time = time.time()
     model.fit(X_train,Y_train)
+    # Uncomment the block below in order to print out top/bot 10 hate speech words for the Naive Bayes model
     # if args.model == "NaiveBayes":
     #     top_10, bot_10 = model.get_ratios()
     #     print("Top 10 hatespeech words")
     #     for entry in top_10:
-    #         print(str(list(feat_extractor.bigrams.keys())[list(feat_extractor.bigrams.values()).index(entry[1])])
+    #         print(str(list(feat_extractor.unigram.keys())[list(feat_extractor.unigram.values()).index(entry[1])])
     #               + ":" + str(entry[0]))
     #
     #     print("")
     #
     #     print("Top 10 Nonhatespeech words")
     #     for entry in bot_10:
-    #         print(str(list(feat_extractor.bigrams.keys())[list(feat_extractor.bigrams.values()).index(entry[1])])
+    #         print(str(list(feat_extractor.unigram.keys())[list(feat_extractor.unigram.values()).index(entry[1])])
     #               + ":" + str(entry[0]))
 
     print("===== Train Accuracy =====")

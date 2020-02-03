@@ -104,6 +104,7 @@ class NaiveBayesClassifier(HateSpeechClassifier):
 
         return predictions
 
+    # Function used to compute the ratios of p(w|1)/p(w|0)
     def get_ratios(self):
         ratios = []
         hatespeech_sum = sum(self.word_counts['hatespeech'].values())
@@ -130,8 +131,8 @@ class LogisticRegressionClassifier(HateSpeechClassifier):
 
     def __init__(self):
         # Add your code here!
-        self.learning_rate = 5e-5
-        self.epochs = 60000
+        self.learning_rate = 5e-6
+        self.epochs = 30000
         self.weights = None
         self.regularization_factor = .001
 
@@ -149,12 +150,13 @@ class LogisticRegressionClassifier(HateSpeechClassifier):
 
             self.weights += self.learning_rate * gradients
 
-            if epoch % 1000 == 0:
-                print("==================================")
-                print("Epoch: " + str(epoch))
-                print("Log Likelihood: " + str(self.log_likelihood(X, Y)))
-                average_loss = sum(losses) / len(losses)
-                print("Average Loss: " + str(average_loss))
+            # Uncomment to get a running update of the Log Likelihood and Average loss of the model
+            # if epoch % 1000 == 0:
+            #     print("==================================")
+            #     print("Epoch: " + str(epoch))
+            #     print("Log Likelihood: " + str(self.log_likelihood(X, Y)))
+            #     average_loss = sum(losses) / len(losses)
+            #     print("Average Loss: " + str(average_loss))
 
     def predict(self, X):
         # Add your code here!
