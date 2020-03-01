@@ -49,32 +49,36 @@ class NgramModel(object):
         self.n = n
         self.k = k
         self.model_ngrams = {}
+        self.vocab = set()
+        self.context_counts = {}
 
     def get_vocab(self):
         ''' Returns the set of characters in the vocab '''
-        vocab = set()
-        for key in self.model_ngrams.keys():
-            vocab.add(key[1])
-        return vocab
+        return self.vocab
 
     def update(self, text):
         ''' Updates the model n-grams based on text '''
         grams = ngrams(self.n, text)
         for ngram in grams:
+            self.vocab.add(ngram[1])
             if ngram in self.model_ngrams.keys():
                 self.model_ngrams[ngram] += 1
             else:
                 self.model_ngrams[ngram] = 1
+            #  we compute the context counts upfront in order to make the prob calculations faster down the line
+            if ngram[0] in self.context_counts.keys():
+                self.context_counts[ngram[0]] += 1
+            else:
+                self.context_counts[ngram[0]] = 1
 
     def prob(self, context, char):
         ''' Returns the probability of char appearing after context '''
         # check if the context has been seen before and get context count
         context_seen = False
         context_count = 0
-        for key in self.model_ngrams.keys():
-            if context == key[0]:
-                context_seen = True
-                context_count += self.model_ngrams[key]
+        if context in self.context_counts.keys():
+            context_seen = True
+            context_count += self.context_counts[context]
 
         if not context_seen:  # return (1 / vocab_size) if the context has not been seen before
             return 1 / len(self.get_vocab())
@@ -141,13 +145,10 @@ class NgramModelWithInterpolation(NgramModel):
         super().__init__(n, k)
         self.lambdas = []
         for i in range(self.n + 1):
-            self.lambdas.append(1.0 / (self.n + 1))
+            self.lambdas.append(1.0 / (self.n + 1))  # initialize all lambdas to be equal
 
     def get_vocab(self):
-        vocab = set()
-        for key in self.model_ngrams.keys():
-            vocab.add(key[1])
-        return vocab
+        return self.vocab
 
     def update(self, text):
         interpolated_grams = []  # this will be a list of ngram lists with N + 1 lists
@@ -157,16 +158,33 @@ class NgramModelWithInterpolation(NgramModel):
             count -= 1
         for ngram in interpolated_grams:  # iterate through every list of ngrams
             for gram in ngram:  # iterated through every ngram in each list
+                self.vocab.add(gram[1])
                 if gram in self.model_ngrams.keys():
                     self.model_ngrams[gram] += 1
                 else:
                     self.model_ngrams[gram] = 1
+                #  we compute the context counts upfront in order to make the prob calculations faster down the line
+                if gram[0] in self.context_counts.keys():
+                    self.context_counts[gram[0]] += 1
+                else:
+                    self.context_counts[gram[0]] = 1
 
     def prob(self, context, char):
+        # probs_and_context_counts = []
+        # for i in range(self.n + 1):
+        #     context = context[1:]
+        #     probs_and_context_counts.append(self.prob_helper(context, char))
+        #
+        # total_counts = sum([pair[1] for pair in probs_and_context_counts])
+        # total_prob = 0
+        # for prob, count in probs_and_context_counts:  # set the lambda of each ngram to depending on the frequency of context
+        #     curr_lambda = count / total_counts
+        #     total_prob += curr_lambda * prob
+        # return total_prob
         total_prob = self.lambdas[0] * self.prob_helper(context, char)
         for i in range(1, len(self.lambdas)):
-            context = context[1:]
-            total_prob += self.lambdas[i] * self.prob_helper(context, char)
+            context = context[1:]  # remove first word from context each iteration
+            total_prob += self.lambdas[i] * self.prob_helper(context, char)  # use join to turn list into string
 
         return total_prob
 
@@ -174,10 +192,9 @@ class NgramModelWithInterpolation(NgramModel):
         # check if the context has been seen before and get context count
         context_seen = False
         context_count = 0
-        for key in self.model_ngrams.keys():
-            if context == key[0]:
-                context_seen = True
-                context_count += self.model_ngrams[key]
+        if context in self.context_counts.keys():
+            context_seen = True
+            context_count += self.context_counts[context]
 
         if not context_seen:  # return (1 / vocab_size) if the context has not been seen before
             return 1 / len(self.get_vocab())
@@ -197,4 +214,7 @@ class NgramModelWithInterpolation(NgramModel):
 ################################################################################
 
 if __name__ == '__main__':
-    pass
+    print("creating model based on shakespeare_inputs.txt using n = 4 and k = .05 with interpolation.")
+    m = create_ngram_model(NgramModel, 'shakespeare_input.txt', n=4, k=.05)
+    with open("shakespeare_sonnets.txt", encoding='utf-8') as f:
+        print("Model perplexity for shakespeare_sonnexts.txt: " + str(m.perplexity(f.read())))
